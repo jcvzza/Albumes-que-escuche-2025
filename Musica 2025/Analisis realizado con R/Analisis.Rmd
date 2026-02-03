@@ -1,0 +1,130 @@
+---
+title: "¿Lo más escuchado es lo mejor valorado?"
+author: "Jean Vazquez"
+date: "2026-01-10"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r, echo = FALSE, include=FALSE}
+library(readr)
+library(dbplyr)
+library(tidyverse)
+library(ggplot2)
+
+Music <- read_csv("~/Downloads/Albums_2025.csv")
+
+table_genre <- Music %>%
+  group_by(Genre) %>%
+  summarise(
+    Promedio_Rating_Personal = mean(Rating_Personal, na.rm = TRUE),
+    Promedio_Rating_RYM = mean(Rating_RYM, na.rm = TRUE),
+    Cuenta_Genre = n(),
+    Cuenta_Ranking_On_Spotify = sum(Ranking_On_Spotify != "N/A")
+    ) %>%
+  arrange(desc(Promedio_Rating_Personal))
+
+table_artist <- Music %>%
+  group_by(Artist_Name) %>%
+  summarise(
+    Promedio_Rating_Personal = mean(Rating_Personal, na.rm = TRUE),
+    Promedio_Rating_RYM = mean(Rating_RYM, na.rm = TRUE),
+    Cuenta_Artist = n(),
+    Cuenta_Ranking_On_Spotify = sum(Ranking_On_Spotify != "N/A")
+  ) %>%
+  arrange(desc(Promedio_Rating_Personal))
+
+table_country <- Music %>%
+  group_by(Country) %>%
+  summarise(
+    Promedio_Rating_Personal = mean(Rating_Personal, na.rm = TRUE),
+    Promedio_Rating_RYM = mean(Rating_RYM, na.rm = TRUE),
+    Cuenta_Country = n(),
+    Cuenta_Ranking_On_Spotify = sum(Ranking_On_Spotify != "N/A")
+  ) %>%
+  arrange(desc(Promedio_Rating_Personal))
+
+table_year <- Music %>%
+  group_by(Release_Year) %>%
+  summarise(
+    Promedio_Rating_Personal = mean(Rating_Personal, na.rm = TRUE),
+    Promedio_Rating_RYM = mean(Rating_RYM, na.rm = TRUE),
+    Cuenta_Year = n(),
+    Cuenta_Ranking_On_Spotify = sum(Ranking_On_Spotify != "N/A")
+  ) %>%
+  arrange(desc(Promedio_Rating_Personal))
+```
+
+## Introducción
+Durante el año 2025 decidí escuchar un álbum por día para ampliar mis gustos musicales y acercarme también a lo que otros disfrutan en su día a día. Las estadísticas aquí presentadas reflejan inevitablemente un sesgo, ya que gran parte de las recomendaciones provinieron de mi círculo de amigos, por lo que los álbumes analizados están influidos por sus preferencias. Este análisis debe entenderse de manera lúdica y no como un estudio académico.
+
+Existe la percepción de que la música más comercial y popular suele ser menos apreciada por la crítica especializada. Con esa idea en mente, decidí comparar los álbumes que forman parte de los 365 más escuchados en la historia de Spotify con aquellos que no figuran en esa lista, incorporando además algunos metadatos que enriquecen el análisis.
+
+### Relación entre el Rating RYM y la posición de los álbumes en la lista de los más escuchados en la historia de Spotify
+La gráfica presenta la correlación entre el rating que le dan los usuarios a los álbumes en la plataforma RYM, otorga calificaciones desde 0.5 hasta 5 y la compara con su posición entre los álbumes más escuchados de Spotify.
+```{r grafica, echo=FALSE, message=FALSE}
+ggplot(
+  Music %>% filter(Ranking_On_Spotify != "N/A"),
+  aes(x = as.numeric(Ranking_On_Spotify), y = Rating_RYM)
+) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "black", linewidth = 1) +
+  theme_minimal() +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank()
+  )
+```
+
+Como se puede observar existe una ligera pendiente positiva lo que nos puede indicar una relación que nos indica que los álbumes más escuchados en spotify son los que tienden a tener una valoración crítica más baja, esto refleja diferencias entre el consumo masivo en spotify y la crítica especializada.
+
+### Géneros con más álbumes en el top 365 de los más escuchados en Spotify 
+Los géneros musicales forman parte fundamental de la escucha del público, puesto que mucha gente solo escucha ciertos álbumes que formen parte de sus géneros músicales favoritos, por lo que es necesario saber cuales son los géneros músicales más escuchados.
+
+```{r grafica1, echo=FALSE, message=FALSE}
+top_genres <- table_genre[order(-table_genre$Cuenta_Ranking_On_Spotify), ][1:10, ] 
+
+ggplot(top_genres, aes(x = reorder(Genre, Cuenta_Ranking_On_Spotify), y = Cuenta_Ranking_On_Spotify, fill = Genre)) + 
+  geom_col() + 
+  coord_flip() + 
+  labs(x = "Género", y = "Cantidad de álbumes en el ranking de Spotify") + 
+  theme_minimal() + 
+  theme(legend.position = "none")
+```
+
+Como podemos ver el pop es el género musical con más álbumes en el listado de los 365 álbumes más escuchados de la historia, incluso es seguido por otra de sus variantes como lo es el pop rock, sin embargo el R&B alternativo esta empezando a ganar aún más terreno y tal vez con el pasar del tiempo el alternativo ahora sea el mainstream.
+
+### Artistas con más álbumes en el top 365 de los más escuchados en la historia de Spotify
+Los artistas más escuchados en Spotify suelen ser a su vez los más escuchados a nivel mundial, esto debido a que Spotify cuenta con una gran base de suscriptores, lo que significa que si algún artista logra tener algún álbum dentro de los más escuchados de la historia, esto indicará que cuenta con mucha popularidad.
+
+```{r grafica3, echo=FALSE, message=FALSE}
+top_artist <- table_artist[order(-table_artist$Cuenta_Ranking_On_Spotify), ][1:10, ] 
+
+ggplot(top_artist, aes(x = reorder(Artist_Name, Cuenta_Ranking_On_Spotify), y = Cuenta_Ranking_On_Spotify, fill = Artist_Name)) + 
+  geom_col() + 
+  coord_flip() + 
+  labs(x = "Artistas", y = "Cantidad de álbumes en el ranking de Spotify") + 
+  theme_minimal() + 
+  theme(legend.position = "none")
+```
+
+Como se puede ver y para sorpresa de nadie, algunos de los nombres que más escuchamos día con día encabezan esta lista, tales como Bad Bunny quien la encabeza (ádemas de contar con el álbum mas escuchado de la historia de la plataforma), seguido por grandes artistas de renombre como Ariana Grande, Travis Scott y Taylor Swift quienes han dominado el mainstream durante mucho tiempo.
+
+### Comparación del rating de RYM entre los álbumes que forman parte del Ranking de los más escuchados de Spotify y los que no se encuentran en él.
+Debido a la creencia de que la música mainstream nunca es la de mejor calidad, decidí comparar las calificaciones en Rate Your Music, referentes a los álbumes que se encuentran dentro del ranking de los más escuchados de la historia de Spotify y los que no se encuentran en esta lista.
+
+```{r grafica4, echo=FALSE, message=FALSE}
+table_genre %>%
+  mutate(Grupo = ifelse(Cuenta_Ranking_On_Spotify > 0, "Dentro del ranking", "Fuera del Ranking")) %>%
+  ggplot(aes(x = Grupo, y = Promedio_Rating_RYM, fill = Grupo)) +
+  geom_boxplot(alpha = 0.7) +
+  labs(x = "Grupo de álbumes",
+       y = "Promedio Rating RYM") +
+  theme_minimal()
+```
+
+Como podemos ver, los álbumes que se encuentran dentro del ranking tienen peores calificaciones que los que se encuentran fuera de esta, esto es solo una estadística mas que ayuda a dar sustento a la teoría de que los álbumes mainstream no son lo mejor de la música.
+
+### Conclusiones
+A pesar de que existen varias estadísticas que nos muestran que los álbumes que no son los más escuchados por el público, tienen mejor calificación que los álbumes mainstream, no existen una diferencia ta significativa, es cierto que existe una diferencia pero no tan clara como para poder afirmar que la música que no es mainstream es mejor que la que esta en los primeros puestos de las listas.
